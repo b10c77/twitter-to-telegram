@@ -55,7 +55,7 @@ const getConfigFile = () => {
 }
 
 const storeSinceId = _ => {
-  console.log("storeSinceId", new Date().toISOString(), _)
+  //console.log("storeSinceId", new Date().toISOString(), _)
   fs.writeFile(
     getConfigFile(), 
     JSON.stringify({sinceId: _}, null, 4), 
@@ -78,7 +78,7 @@ async function main() {
     const getSinceId = () => {
       if (fs.existsSync(getConfigFile())) {
         const data = JSON.parse(fs.readFileSync(getConfigFile(), 'utf8'))
-        console.log("getSinceId", new Date().toISOString(), data)
+        //console.log("getSinceId", new Date().toISOString(), data)
         return data.sinceId
       } else {
         //errMsg = `File ${config.twitterScreenName} does not exist`;
