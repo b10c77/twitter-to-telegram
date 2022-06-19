@@ -6,13 +6,9 @@ Relay tweets to Telegram
 
 `npm install`
 
-## Dependencies
-
-- Redis (specified as `REDIS_URL` environment variable or `--redisUrl` argument)
-
 ## Run
 
-`npm start -- --telegramChatId=1234 --telegramBotToken=ABC --twitterScreenName=abrkn --twitterConsumerKey=ABC --twitterConsumerSecret=ABC`
+`npm start -- --telegramChatId=1234 --telegramBotToken=ABC --twitterScreenName=abrkn --twitterConsumerKey=ABC --twitterConsumerSecret=ABC --twitterAccessTokenKey=ABC --twitterAccessTokenSecret=ABC`
 
 ## Configuration
 
