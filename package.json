@@ -29,14 +29,13 @@
     "delay": "3.0.0",
     "dotenv": "6.0.0",
     "panik": "1.0.1",
-    "redis": "2.8.0",
     "shutin": "1.1.0",
     "telegraf": "3.22.1",
     "twitter": "1.7.1",
-    "yargs": "12.0.1"
+    "yargs": "^17.5.1"
   },
   "devDependencies": {
-    "nodemon": "1.18.3"
+    "nodemon": "^2.0.16"
   },
   "engines": {
     "node": "~9.9.0",
