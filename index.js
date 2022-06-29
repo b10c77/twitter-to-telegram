@@ -23,10 +23,6 @@ const config = require('yargs')
     twitterAccessTokenSecret: { demandOption: true },
   }).argv;
 
-//const redis = require('redis');
-//promisifyAll(redis);
-//const redisClient = redis.createClient(config.redisUrl);
-
 const twitter = new Twitter({
   consumer_key: config.twitterConsumerKey,
   consumer_secret: config.twitterConsumerSecret,
@@ -39,16 +35,6 @@ const bot = new Telegraf(config.telegramBotToken);
 bot.telegram.getMe().then(botInfo => {
   bot.options.username = botInfo.username;
 });
-
-/*
-const redisKeyPrefix = [
-  config.twitterScreenName,
-  config.telegramBotToken.split(/:/)[0],
-  config.telegramChatId,
-].join('_');
-*/
-
-//const storeSinceId = _ => redisClient.setAsync(`${redisKeyPrefix}:sinceId`, _);
 
 const getConfigFile = () => {
   return path.resolve(__dirname, config.twitterScreenName)
@@ -71,22 +57,22 @@ async function main() {
 
   // Rate limit telegram messages to 1 per second to avoid throtle limits
   const telegramMsgRateLimit = 1000 // 1 second
-  let telegramMsgCount = 0
+
+  const getSinceId = () => {
+    if (fs.existsSync(getConfigFile())) {
+      const data = JSON.parse(fs.readFileSync(getConfigFile(), 'utf8'))
+      //console.log("getSinceId", new Date().toISOString(), data)
+      return data.sinceId
+    } else {
+      //errMsg = `File ${config.twitterScreenName} does not exist`;
+      //console.log(errMsg);
+      //throw errMsg;
+      return null
+    }
+  }
 
   do {
-    //const sinceId = await redisClient.getAsync(`${redisKeyPrefix}:sinceId`);
-    const getSinceId = () => {
-      if (fs.existsSync(getConfigFile())) {
-        const data = JSON.parse(fs.readFileSync(getConfigFile(), 'utf8'))
-        //console.log("getSinceId", new Date().toISOString(), data)
-        return data.sinceId
-      } else {
-        //errMsg = `File ${config.twitterScreenName} does not exist`;
-        //console.log(errMsg);
-        //throw errMsg;
-        return null
-      }
-    }
+    let telegramMsgCount = 0
     const sinceId = getSinceId()
 
     const tweets = await twitter.get('statuses/user_timeline', {
@@ -101,6 +87,7 @@ async function main() {
       for (const tweet of tweets.slice().reverse()) {
         // Stop relaying once the most recently relayed tweet is reached
         if (tweet.id <= +sinceId) {
+          //console.log("canceling...", tweet.id, +sinceId)
           continue;
         }
 
