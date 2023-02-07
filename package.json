@@ -4,6 +4,7 @@
   "description": "Relay tweets to Telegram",
   "scripts": {
     "start": "node -r panik -r dotenv/config index.js",
+    "follows": "node -r panik -r dotenv/config follows.js",
     "watch": "nodemon -x 'npm start'",
     "heroku:logs": "heroku logs --tail"
   },

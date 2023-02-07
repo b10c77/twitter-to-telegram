@@ -8,7 +8,14 @@ Relay tweets to Telegram
 
 ## Run
 
+# Twitter to telegram relay
 `npm start -- --telegramChatId=1234 --telegramBotToken=ABC --twitterScreenName=abrkn --twitterConsumerKey=ABC --twitterConsumerSecret=ABC --twitterAccessTokenKey=ABC --twitterAccessTokenSecret=ABC`
+
+# When twitter user follows new friend
+`npm run follows -- --telegramChatId=1234 --telegramBotToken=ABC --twitterScreenName=user1 --twitterConsumerKey=ABC --twitterConsumerSecret=ABC --twitterAccessTokenKey=ABC --twitterAccessTokenSecret=ABC`
+
+# When twitter users follows new friends (multiple users)
+`npm run follows -- --telegramChatId=1234 --telegramBotToken=ABC --twitterScreenName=user1 --twitterScreenName=user2 --twitterScreenName=user3 --twitterConsumerKey=ABC --twitterConsumerSecret=ABC --twitterAccessTokenKey=ABC --twitterAccessTokenSecret=ABC`
 
 ## Configuration
 
