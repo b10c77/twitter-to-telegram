@@ -109,7 +109,7 @@ async function main() {
       console.error(error)
     })
 
-    if (latestFriends) {      
+    if (friends && latestFriends) {      
       //for (const friend of friends.users.slice().reverse()) {
       for (const friend of friends.users.reverse()) {
 
