@@ -4,13 +4,14 @@ const { delayUnlessShutdown } = require('shutin');
 const fs = require('fs');
 const path = require('path')
 
-const MAX_FRIENDS_COUNT = 5;
+const MAX_FRIENDS_COUNT = 4;
+const CONFIG_FILE_NAME = "config.json"
 
 const config = require('yargs')
   .env('TTT')
   .options({
     // API max 15 per 15 minutes
-    interval: { default: 90, number: true },
+    interval: { default: 70, number: true },
     telegramChatId: { demandOption: true },
     telegramBotToken: { demandOption: true },
     twitterScreenName: { demandOption: true },
@@ -29,7 +30,8 @@ const twitter = new Twitter({
 
 const bot = new Telegraf(config.telegramBotToken);
 
-let twitterScreenNameIndex = 0 
+// get twitter username from array (if we passed multiple users)
+let twitterScreenNameIndex = -1
 let twitterScreenName = ""
 const getTwitterScreenName = () => {
   if (Array.isArray(config.twitterScreenName)) {
@@ -38,8 +40,7 @@ const getTwitterScreenName = () => {
     else 
       twitterScreenNameIndex++
     return config.twitterScreenName[twitterScreenNameIndex]
-  }
-  else return config.twitterScreenName
+  } else return config.twitterScreenName
 }
 
 bot.telegram.getMe().then(botInfo => {
@@ -47,14 +48,25 @@ bot.telegram.getMe().then(botInfo => {
 });
 
 const getConfigFile = () => {
-  return path.resolve(__dirname, twitterScreenName)
+  return path.resolve(__dirname, CONFIG_FILE_NAME)
 }
 
-const storeSinceId = _ => {
-  console.log("storeSinceId", new Date().toISOString(), _)
+const storeLatestFriends = _ => {
+  //console.log(twitterScreenName, "storeLatestFriends", new Date().toISOString(), _)
+  const configFile = getConfigFile()
+  let data
+  if (fs.existsSync(configFile)) {
+    data = JSON.parse(fs.readFileSync(configFile, 'utf8'))
+    data[twitterScreenName] = _
+  } else {
+    data = {
+      [twitterScreenName]:  _
+    }
+  }
+
   fs.writeFile(
-    getConfigFile(), 
-    JSON.stringify({sinceId: _}, null, 4), 
+    configFile, 
+    JSON.stringify(data, null, 4), 
     'utf8', (err) => {
       //if (err) throw err;
       if (err) console.error(err);
@@ -71,15 +83,14 @@ async function main() {
   // Rate limit telegram messages to 1 per second to avoid throtle limits
   const telegramMsgRateLimit = 1000 // 1 second
 
-  const getLastFriendId = () => {
+  const getLastestFriends = () => {
     if (fs.existsSync(getConfigFile())) {
       const data = JSON.parse(fs.readFileSync(getConfigFile(), 'utf8'))
-      //console.log("getSinceId", new Date().toISOString(), data)
-      return data.sinceId
+      if (data[twitterScreenName])
+        return data[twitterScreenName]
+      else 
+        return null
     } else {
-      //errMsg = `File ${config.twitterScreenName} does not exist`;
-      //console.log(errMsg);
-      //throw errMsg;
       return null
     }
   }
@@ -88,50 +99,49 @@ async function main() {
 
     twitterScreenName = getTwitterScreenName()
     let telegramMsgCount = 0
-    const sinceId = getLastFriendId()
+    const latestFriends = getLastestFriends()
 
     const friends = await twitter.get('friends/list', {
       screen_name: twitterScreenName,
       count: MAX_FRIENDS_COUNT,
-    });
-    //console.log(friends)
+    })
+    .catch(function (error) {
+      console.error(error)
+    })
 
-    if (sinceId) {
-      
-      for (const friend of friends.users.slice().reverse()) {
-        // Stop relaying once the most recently relayed tweet is reached
-        if (friend.id <= +sinceId) {
-          console.log("canceling...", friend.id, +sinceId)
+    if (latestFriends) {      
+      //for (const friend of friends.users.slice().reverse()) {
+      for (const friend of friends.users.reverse()) {
+
+        if (latestFriends.includes(friend.screen_name)) {
+          //console.log(twitterScreenName, "canceling...", friend.screen_name)
           continue;
         }
-
-        console.log("Followed someone", friend.screen_name)
+        console.log(twitterScreenName, "Followed someone", friend.screen_name)
+        
         setTimeout( async () => {
           await bot.telegram.sendMessage(
             config.telegramChatId,
             [
-              `@${twitterScreenName} just followed ${friend.screen_name}`,
-              `followers_count: ${friend.followers_count}`,
+              `<a href="https://twitter.com/${twitterScreenName}">@${twitterScreenName}</a> just followed <a href="https://twitter.com/${friend.screen_name}">@${friend.screen_name}</a>`,
+              `name: ${friend.name}`,
+              `description: ${friend.description}`,
+              `<pre>followers_count: ${friend.followers_count}`,
               `friends_count: ${friend.friends_count}`,
-              `created_at: ${friend.created_at}`,
+              `created_at: ${friend.created_at}</pre>`,
             ].join('\n'),
-            { parse_mode: 'Markdown' }
-            //{ parse_mode: 'HTML' }
-          );
-  
-          //await storeSinceId(tweet.id_str);
-          await storeSinceId(friend.id);
+            //{ parse_mode: 'Markdown' }
+            { parse_mode: 'HTML' }
+          );  
         }, telegramMsgCount * telegramMsgRateLimit)
         telegramMsgCount++
       }
-    } else {
-      const [mostRecentTweet] = friends.users;
-
-      if (mostRecentTweet) {
-        //await storeSinceId(mostRecentTweet.id_str);
-        await storeSinceId(mostRecentTweet.id);
-      }
     }
+    const mostRecentFriends = friends.users.map((item) => {
+      return item.screen_name
+    });
+    if (mostRecentFriends) await storeLatestFriends(mostRecentFriends)
+
   } while (!(await delayUnlessShutdown(config.interval * 1000)));
 }
 
