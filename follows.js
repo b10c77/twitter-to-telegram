@@ -43,6 +43,7 @@ const getTwitterScreenName = () => {
   } else return config.twitterScreenName
 }
 
+// A simple method for testing your bot's authentication token
 bot.telegram.getMe().then(botInfo => {
   bot.options.username = botInfo.username;
 });
@@ -78,7 +79,7 @@ async function main() {
   
   console.log("config.twitterScreenName", config.twitterScreenName)
   
-  bot.startPolling();
+  //bot.startPolling();
 
   // Rate limit telegram messages to 1 per second to avoid throtle limits
   const telegramMsgRateLimit = 1000 // 1 second
@@ -105,11 +106,14 @@ async function main() {
       screen_name: twitterScreenName,
       count: MAX_FRIENDS_COUNT,
     })
-    .catch(function (error) {
+    .catch((error) => {
       console.error(error)
     })
 
-    if (friends && latestFriends) {      
+    // If we get an "[ { message: 'Rate limit exceeded', code: 88 } ]" error above
+    // friends will be undefined
+    
+    if (friends != undefined && latestFriends) {      
       //for (const friend of friends.users.slice().reverse()) {
       for (const friend of friends.users.reverse()) {
 
@@ -124,8 +128,8 @@ async function main() {
             config.telegramChatId,
             [
               `<a href="https://twitter.com/${twitterScreenName}">@${twitterScreenName}</a> just followed <a href="https://twitter.com/${friend.screen_name}">@${friend.screen_name}</a>`,
-              `name: ${friend.name}`,
-              `description: ${friend.description}`,
+              `<b>name:</b> ${friend.name}`,
+              `<b>description:</b> ${friend.description}`,
               `<pre>followers_count: ${friend.followers_count}`,
               `friends_count: ${friend.friends_count}`,
               `created_at: ${friend.created_at}</pre>`,
@@ -137,11 +141,12 @@ async function main() {
         telegramMsgCount++
       }
     }
-    const mostRecentFriends = friends.users.map((item) => {
-      return item.screen_name
-    });
-    if (mostRecentFriends) await storeLatestFriends(mostRecentFriends)
-
+    if (friends != undefined) {
+      const mostRecentFriends = friends.users.map((item) => {
+        return item.screen_name
+      });
+      if (mostRecentFriends.count) await storeLatestFriends(mostRecentFriends)
+    }
   } while (!(await delayUnlessShutdown(config.interval * 1000)));
 }
 
